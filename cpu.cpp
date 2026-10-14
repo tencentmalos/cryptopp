@@ -963,9 +963,13 @@ inline bool CPU_QueryAES()
 	if ((getauxval(AT_HWCAP2) & HWCAP2_AES) != 0)
 		return true;
 #elif defined(__APPLE__) && defined(__aarch64__)
-	// M1 processor
-	if (IsAppleMachineARMv82())
-		return true;
+	// Query the capability, not a CPU brand string: M1 Pro/Max and newer
+	// Apple Silicon names are not recognized by AppleMachineInfo.
+	int available = 0;
+	size_t size = sizeof(available);
+	if (sysctlbyname("hw.optional.arm.FEAT_AES", &available, &size, NULL, 0) == 0)
+		return available != 0;
+	// An unavailable capability query must keep the portable fallback.
 #elif defined(_WIN32) && defined(_M_ARM64)
 	if (IsProcessorFeaturePresent(PF_ARM_V8_CRYPTO_INSTRUCTIONS_AVAILABLE) != 0)
 		return true;
